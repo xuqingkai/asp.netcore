@@ -11,7 +11,7 @@ builder.WebHost.UseUrls("http://0.0.0.0:9000");  //修改默认端口
 //加载配置文件
 ConfigurationBuilder configurationBuilder = new ConfigurationBuilder();
 //添加配置文件路径
-configurationBuilder.SetBasePath(Directory.GetCurrentDirectory()).AddJsonFile("appsettings.json");
+configurationBuilder.SetBasePath(Directory.GetCurrentDirectory()).AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
 var configuration = configurationBuilder.Build();
 
 var app = builder.Build();
