@@ -45,8 +45,8 @@ app.Map("/api/db/{table?}/{action?}/{id?}", (HttpContext context) =>{
     string id = context.Request.RouteValues["id"] + "";
 
     string databaseConnectionString = configuration["Database:SqlClient"] + "";
-    System.Data.SqlClient.SqlConnection sqlConnection = new System.Data.SqlClient.SqlConnection(databaseConnectionString);
-    if (sqlConnection.State != System.Data.ConnectionState.Open) { sqlConnection.Open(); }
+    System.Data.SqlClient.SqlConnection connection = new System.Data.SqlClient.SqlConnection(databaseConnectionString);
+    if (connection.State != System.Data.ConnectionState.Open) { connection.Open(); }
 
     //int returnID = 0;
     //string? returnCode = null;
@@ -55,7 +55,7 @@ app.Map("/api/db/{table?}/{action?}/{id?}", (HttpContext context) =>{
     if(table == "")
     {
         string? json = null;
-        System.Data.SqlClient.SqlCommand command = new System.Data.SqlClient.SqlCommand("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE'", sqlConnection);
+        System.Data.SqlClient.SqlCommand command = new System.Data.SqlClient.SqlCommand("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE'", connection);
         System.Data.SqlClient.SqlDataReader dataReader = command.ExecuteReader();
         while(dataReader.Read())
         {
@@ -83,7 +83,7 @@ app.Map("/api/db/{table?}/{action?}/{id?}", (HttpContext context) =>{
             string fields = "";
             string values = "";
             string updateSql = "";
-            System.Data.SqlClient.SqlCommand sqlCommand = new System.Data.SqlClient.SqlCommand();
+            System.Data.SqlClient.SqlCommand command = new System.Data.SqlClient.SqlCommand();
             string?[] keys = data.AllKeys;
             if(keys != null)
             {
@@ -95,7 +95,7 @@ app.Map("/api/db/{table?}/{action?}/{id?}", (HttpContext context) =>{
                         fields += ",[" + key + "]";
                         values += ",@" + key + "";
                         updateSql += ",[" + key + "]=@" + key + "";
-                        sqlCommand.Parameters.Add(new System.Data.SqlClient.SqlParameter(key, data[key])); 
+                        command.Parameters.Add(new System.Data.SqlClient.SqlParameter(key, data[key])); 
                     }
                 } 
             }
@@ -117,30 +117,30 @@ app.Map("/api/db/{table?}/{action?}/{id?}", (HttpContext context) =>{
                 updateWhere = " [id]=" + id;
             }
 
-            sqlCommand.Connection = sqlConnection;
+            command.Connection = connection;
             if(string.IsNullOrEmpty(updateWhere))
             {
-                sqlCommand.CommandText = "INSERT INTO [xqk_" + table + "] (" + fields + ") VALUES (" + values + ");";
+                command.CommandText = "INSERT INTO [xqk_" + table + "] (" + fields + ") VALUES (" + values + ");";
             }
             else
             {
-                sqlCommand.CommandText = "UPDATE [xqk_" + table + "] SET " + updateSql + " WHERE " + updateWhere + ";";
+                command.CommandText = "UPDATE [xqk_" + table + "] SET " + updateSql + " WHERE " + updateWhere + ";";
             }
           
-            //sqlCommand.CommandType = System.Data.CommandType.StoredProcedure;
-            int rows = sqlCommand.ExecuteNonQuery();
+            //command.CommandType = System.Data.CommandType.StoredProcedure;
+            int rows = command.ExecuteNonQuery();
             if(rows == 0)
             {
-                returnError = "保存失败：" + sqlCommand.CommandText;
+                returnError = "保存失败：" + command.CommandText;
             }
         }
     }
     else if(action == "list")
     {//index
         string sql = "SELECT * FROM [xqk_" + table + "] WHERE 1=1 ORDER BY ID DESC;";
-        System.Data.SqlClient.SqlCommand sqlCommand = new System.Data.SqlClient.SqlCommand(sql, sqlConnection);
+        System.Data.SqlClient.SqlCommand command = new System.Data.SqlClient.SqlCommand(sql, connection);
         System.Data.DataTable dataTable = new System.Data.DataTable();
-        new System.Data.SqlClient.SqlDataAdapter(sqlCommand).Fill(dataTable);
+        new System.Data.SqlClient.SqlDataAdapter(command).Fill(dataTable);
         string? json = null;
         foreach(System.Data.DataRow dataRow in dataTable.Rows){
             string item = "";
@@ -158,9 +158,9 @@ app.Map("/api/db/{table?}/{action?}/{id?}", (HttpContext context) =>{
     else if(action == "show")
     {//detail
         string sql = "SELECT top 1 * FROM [xqk_" + table + "] WHERE [id]=" + id + " ORDER BY ID DESC;";
-        System.Data.SqlClient.SqlCommand sqlCommand = new System.Data.SqlClient.SqlCommand(sql, sqlConnection);
+        System.Data.SqlClient.SqlCommand command = new System.Data.SqlClient.SqlCommand(sql, connection);
         System.Data.DataTable dataTable = new System.Data.DataTable();
-        new System.Data.SqlClient.SqlDataAdapter(sqlCommand).Fill(dataTable);
+        new System.Data.SqlClient.SqlDataAdapter(command).Fill(dataTable);
         if (dataTable.Rows.Count > 0)
         {
             string? json = null;
@@ -176,32 +176,32 @@ app.Map("/api/db/{table?}/{action?}/{id?}", (HttpContext context) =>{
     else if(action == "delete")
     {
         string sql = "DELETE FROM [xqk_" + table + "] WHERE 1=1";
-        System.Data.SqlClient.SqlCommand sqlCommand = new System.Data.SqlClient.SqlCommand();
-        sqlCommand.Connection = sqlConnection;
+        System.Data.SqlClient.SqlCommand command = new System.Data.SqlClient.SqlCommand();
+        command.Connection = connection;
         if(string.IsNullOrEmpty(id))
         {
             foreach(string key in context.Request.Query.Keys)
             {
             sql +=  " AND [" + key + "] = @" + key;
-            sqlCommand.Parameters.Add(new System.Data.SqlClient.SqlParameter(key, context.Request.Query[key].FirstOrDefault())); 
+            command.Parameters.Add(new System.Data.SqlClient.SqlParameter(key, context.Request.Query[key].FirstOrDefault())); 
             }
         }
         else
         {
           sql +=  " AND [id] = @id";
-          sqlCommand.Parameters.Add(new System.Data.SqlClient.SqlParameter("id", id)); 
+          command.Parameters.Add(new System.Data.SqlClient.SqlParameter("id", id)); 
         }
-        sqlCommand.CommandText = sql;
-        if(sqlCommand.Parameters.Count == 0)
+        command.CommandText = sql;
+        if(command.Parameters.Count == 0)
         {
             returnError = "请输入删除条件"; 
         }
         else
         {
-            int rows = sqlCommand.ExecuteNonQuery();
+            int rows = command.ExecuteNonQuery();
             if(rows == 0)
             {
-                returnError = "删除失败:" + sqlCommand.CommandText; 
+                returnError = "删除失败:" + command.CommandText; 
             }
         }
     }
@@ -210,7 +210,7 @@ app.Map("/api/db/{table?}/{action?}/{id?}", (HttpContext context) =>{
         returnError = action + "不存在";
     }
     
-    sqlConnection.Close();
+    connection.Close();
     string? returnJSON = null;
     if(returnError == null)
     {
@@ -229,44 +229,49 @@ app.Map("/api/db/{table?}/{action?}/{id?}", (HttpContext context) =>{
 });
 
 
-app.MapGet("/ip", (HttpContext context) => {
-  string ip = "" + context.Connection.RemoteIpAddress?.ToString();
-  ip = context.Request.Headers["X-Forwarded-For"].FirstOrDefault() ?? ip;
-	double timestamp = System.Math.Floor((System.DateTime.Now - System.Convert.ToDateTime("1970-01-01 00:00:00")).TotalSeconds);
+app.MapGet("/ip/{action?}", (HttpContext context) => {
+    string databaseConnectionString = configuration["Database:SqlClient"] + "";
+    System.Data.SqlClient.SqlConnection connection = new System.Data.SqlClient.SqlConnection(databaseConnectionString);
+    if (connection.State != System.Data.ConnectionState.Open) { connection.Open(); }
 
-  string databaseConnectionString = configuration["Database:SqlClient"] + "";
-  System.Data.SqlClient.SqlConnection sqlConnection = new System.Data.SqlClient.SqlConnection(databaseConnectionString);
-  if (sqlConnection.State != System.Data.ConnectionState.Open) { sqlConnection.Open(); }
+    
+    
+    string action = context.Request.RouteValues["action"] + "";
+    if(action == "save")
+    {
+        string ip = "" + context.Connection.RemoteIpAddress?.ToString();
+        ip = context.Request.Headers["X-Forwarded-For"].FirstOrDefault() ?? ip;
+        double timestamp = System.Math.Floor((System.DateTime.Now - System.Convert.ToDateTime("1970-01-01 00:00:00")).TotalSeconds);
+        
+        string sql = "SELECT * FROM [xqk_ip_log] WHERE [ip]='" + ip + "' AND [create_timestamp]>" + (timestamp - 60*20)  + " ORDER BY ID DESC;";
+        System.Data.SqlClient.SqlCommand command = new System.Data.SqlClient.SqlCommand(sql, connection);
+        System.Data.DataTable dataTable = new System.Data.DataTable();
+        new System.Data.SqlClient.SqlDataAdapter(command).Fill(dataTable);
+        if (dataTable.Rows.Count == 0) {
+            sql = "INSERT INTO [xqk_ip_log] ([ip], [create_date], [create_datetime], [create_timestamp]) VALUES ('" + ip + "', '" + System.DateTime.Now.ToString("yyyy-MM-dd") + "', '" + System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "', " + timestamp + ");";
+            command = new System.Data.SqlClient.SqlCommand(sql, connection);
+            int rows = command.ExecuteNonQuery();
+        }
+        return ip; 
+    }
+    else
+    {
+        string sql = "SELECT * FROM [xqk_ip_log] WHERE 1=1 ORDER BY ID DESC;";
+        System.Data.SqlClient.SqlCommand command = new System.Data.SqlClient.SqlCommand(sql, connection);
+        System.Data.DataTable dataTable = new System.Data.DataTable();
+        new System.Data.SqlClient.SqlDataAdapter(command).Fill(dataTable);
 
-  string sql = "SELECT * FROM [xqk_ip_log] WHERE [ip]='" + ip + "' AND [create_timestamp]>" + (timestamp - 60*20)  + " ORDER BY ID DESC;";
-	System.Data.SqlClient.SqlCommand sqlCommand = new System.Data.SqlClient.SqlCommand(sql, sqlConnection);
-	System.Data.DataTable dataTable = new System.Data.DataTable();
-	new System.Data.SqlClient.SqlDataAdapter(sqlCommand).Fill(dataTable);
-	if (dataTable.Rows.Count == 0) {
-		sql = "INSERT INTO [xqk_ip_log] ([ip], [create_date], [create_datetime], [create_timestamp]) VALUES ('" + ip + "', '" + System.DateTime.Now.ToString("yyyy-MM-dd") + "', '" + System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "', " + timestamp + ");";
-		sqlCommand = new System.Data.SqlClient.SqlCommand(sql, sqlConnection);
-		int rows = sqlCommand.ExecuteNonQuery();
-	}
-  sql = "SELECT * FROM [xqk_ip_log] WHERE 1=1 ORDER BY ID DESC;";
-	sqlCommand = new System.Data.SqlClient.SqlCommand(sql, sqlConnection);
-	dataTable = new System.Data.DataTable();
-	new System.Data.SqlClient.SqlDataAdapter(sqlCommand).Fill(dataTable);
-
-  string result = "";
-  foreach(System.Data.DataRow dr in dataTable.Rows){
-      result += dr["id"] + ",【" + dr["ip"] + "】:" + dr["create_datetime"] + "\r\n";
-  }
-  return result;
+        string result = "";
+        foreach(System.Data.DataRow dr in dataTable.Rows){
+            result += dr["id"] + ",【" + dr["ip"] + "】:" + dr["create_datetime"] + "\r\n";
+        }
+        return result;
+    }
 });
 
 app.MapPost("/invoke", ([FromHeader(Name = "x-fc-request-id")] string requestId) =>{
-  // 注意：C# 为编译型语言，直接修改代码不能直接生效！请在控制台右上角“导出代码”，然后在编译代码后重新上传。
-	// 注意：C# 为编译型语言，直接修改代码不能直接生效！请在控制台右上角“导出代码”，然后在编译代码后重新上传。
-	// 注意：C# 为编译型语言，直接修改代码不能直接生效！请在控制台右上角“导出代码”，然后在编译代码后重新上传。
-	// Notice: You need to complie the code first otherwise the code change will not
-	// take effect.
-  Console.WriteLine("get reqeuestId from header:" + requestId);
-  return "get reqeuestId from header:" + requestId;
+    Console.WriteLine("get reqeuestId from header:" + requestId);
+    return "get reqeuestId from header:" + requestId;
 });
 
 app.Run();
