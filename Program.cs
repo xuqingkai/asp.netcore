@@ -211,6 +211,7 @@ app.Map("/api/db/{table?}/{action?}/{id?}", (HttpContext context) =>{
     }
     
     connection.Close();
+    connection.Dispose();
     string? returnJSON = null;
     if(returnError == null)
     {
@@ -233,8 +234,7 @@ app.MapGet("/ip/{action?}", (HttpContext context) => {
     string databaseConnectionString = configuration["Database:SqlClient"] + "";
     System.Data.SqlClient.SqlConnection connection = new System.Data.SqlClient.SqlConnection(databaseConnectionString);
     if (connection.State != System.Data.ConnectionState.Open) { connection.Open(); }
-
-    
+    string result = "";
     
     string action = context.Request.RouteValues["action"] + "";
     if(action == "save")
@@ -252,7 +252,7 @@ app.MapGet("/ip/{action?}", (HttpContext context) => {
             command = new System.Data.SqlClient.SqlCommand(sql, connection);
             int rows = command.ExecuteNonQuery();
         }
-        return ip; 
+        result = ip; 
     }
     else
     {
@@ -261,12 +261,13 @@ app.MapGet("/ip/{action?}", (HttpContext context) => {
         System.Data.DataTable dataTable = new System.Data.DataTable();
         new System.Data.SqlClient.SqlDataAdapter(command).Fill(dataTable);
 
-        string result = "";
         foreach(System.Data.DataRow dr in dataTable.Rows){
             result += dr["id"] + ",【" + dr["ip"] + "】:" + dr["create_datetime"] + "\r\n";
         }
-        return result;
     }
+    connection.Close();
+	connection.Dispose();
+    return result;
 });
 
 app.MapPost("/invoke", ([FromHeader(Name = "x-fc-request-id")] string requestId) =>{
