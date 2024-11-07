@@ -1,0 +1,5 @@
+# 特殊目录
+bin/
+obj/
+logs/
+publish/

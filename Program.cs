@@ -27,7 +27,7 @@ app.MapGet("/", (HttpContext context) => {
         result += "【" + key + "】=" + context.Request.Headers[key] + "\r\n";
     }
     result += System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "\r\n";
-    result += configuration["Database:SqlClient:HostName"] + "\r\n";
+    result += configuration["Database:HostName"] + "\r\n";
     return result;
 });//
 
@@ -262,7 +262,7 @@ app.MapGet("/ip/{action?}", (HttpContext context) => {
         new System.Data.SqlClient.SqlDataAdapter(command).Fill(dataTable);
 
         foreach(System.Data.DataRow dr in dataTable.Rows){
-            result += dr["id"] + ",【" + dr["ip"] + "】:" + dr["create_datetime"] + "\r\n";
+            result += dr["id"] + ",【" + dr["address"] + "】:" + dr["create_datetime"] + "\r\n";
         }
     }
     connection.Close();
