@@ -19,15 +19,22 @@ app.UseSwagger();
 app.UseSwaggerUI();
 
 app.MapGet("/", (HttpContext context) => {
-    string ip = "" + context.Connection.RemoteIpAddress?.ToString();
-    ip = context.Request.Headers["X-Forwarded-For"].FirstOrDefault() ?? ip;
+    context.Response.ContentType="text/html";
+    string result = "";
+    result += "[DateTime]=" + System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "<br />\r\n";
+    result += "[Database]=" + configuration["Database:HostName"] + "<br />\r\n";
+    result += "<hr />";
+    result += "[OSVersion]=" + System.Environment.OSVersion + "<br />\r\n";
+    result += "[.NETCore Version]=" + System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription + "<br />\r\n";
+    result += "[Version]=" + System.Environment.Version.Major + "." + System.Environment.Version.Minor + "." + System.Environment.Version.Build + "." + System.Environment.Version.Revision + "<br />\r\n";
+    result += "[RemoteIP]=" + (context.Request.Headers["X-Forwarded-For"].FirstOrDefault() ?? "" + context.Connection.RemoteIpAddress?.ToString()) + "<br />\r\n";
+
+
+    result += "<hr />";
     double timestamp = System.Math.Floor((System.DateTime.Now - System.Convert.ToDateTime("1970-01-01 00:00:00")).TotalSeconds);
-    string result = "【RemoteIpAddress】=" + ip + "\r\n";
     foreach(var key in context.Request.Headers.Keys){
-        result += "【" + key + "】=" + context.Request.Headers[key] + "\r\n";
+        result += "[" + key + "]=" + context.Request.Headers[key] + "<br />\r\n";
     }
-    result += System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "\r\n";
-    result += configuration["Database:HostName"] + "\r\n";
     return result;
 });//
 
