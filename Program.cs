@@ -28,8 +28,7 @@ app.MapGet("/", (HttpContext context) => {
     result += "[.NETCore Version]=" + System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription + "<br />\r\n";
     result += "[Version]=" + System.Environment.Version.Major + "." + System.Environment.Version.Minor + "." + System.Environment.Version.Build + "." + System.Environment.Version.Revision + "<br />\r\n";
     result += "[RemoteIP]=" + (context.Request.Headers["X-Forwarded-For"].FirstOrDefault() ?? "" + context.Connection.RemoteIpAddress?.ToString()) + "<br />\r\n";
-
-
+    result += "[IsHttps]=" + context.Request.IsHttps + "<br />\r\n";
     result += "<hr />";
     double timestamp = System.Math.Floor((System.DateTime.Now - System.Convert.ToDateTime("1970-01-01 00:00:00")).TotalSeconds);
     foreach(var key in context.Request.Headers.Keys){
@@ -255,7 +254,7 @@ app.MapGet("/ip/{action?}", (HttpContext context) => {
         System.Data.DataTable dataTable = new System.Data.DataTable();
         new System.Data.SqlClient.SqlDataAdapter(command).Fill(dataTable);
         if (dataTable.Rows.Count == 0) {
-            sql = "INSERT INTO [xqk_ip_log] ([ip], [create_date], [create_datetime], [create_timestamp]) VALUES ('" + ip + "', '" + System.DateTime.Now.ToString("yyyy-MM-dd") + "', '" + System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "', " + timestamp + ");";
+            sql = "INSERT INTO [xqk_ip_log] ([ip], [address],[create_date], [create_datetime], [create_timestamp]) VALUES ('" + ip + "',N'测试','" + System.DateTime.Now.ToString("yyyy-MM-dd") + "', '" + System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "', " + timestamp + ");";
             command = new System.Data.SqlClient.SqlCommand(sql, connection);
             int rows = command.ExecuteNonQuery();
         }
